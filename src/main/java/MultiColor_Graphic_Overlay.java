@@ -1,16 +1,25 @@
-import ij.*;
-import ij.process.*;
-import ij.gui.*;
-import ij.plugin.*;
 import java.awt.*;
-import java.awt.geom.*;
-import java.util.*;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.GeneralPath;
+import java.awt.geom.Rectangle2D;
+import java.util.Vector;
 
-/** This plugin demonstrates how to display color objects in a non-destructive graphic overlay. */
+import ij.IJ;
+import ij.ImagePlus;
+import ij.gui.ImageCanvas;
+import ij.gui.Roi;
+import ij.gui.ShapeRoi;
+import ij.plugin.PlugIn;
+
+/**
+ * This plugin demonstrates how to display color objects in a non-destructive
+ * graphic overlay.
+ */
 public class MultiColor_Graphic_Overlay implements PlugIn {
 
 	public void run(String arg) {
-		if (IJ.versionLessThan("1.39f")) return;
+		if (IJ.versionLessThan("1.39f"))
+			return;
 		ImagePlus img = IJ.getImage();
 		ImageCanvas ic = img.getCanvas();
 		Vector list = new Vector();

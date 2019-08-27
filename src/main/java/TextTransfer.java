@@ -11,18 +11,7 @@ import java.awt.*;
 import java.awt.datatransfer.*;
 import java.io.IOException;
 
-public final class TextTransfer implements ClipboardOwner {
-
-	public static void main(String... aArguments) {
-		TextTransfer textTransfer = new TextTransfer();
-
-		// display what is currently on the clipboard
-		System.out.println("Clipboard contains:" + textTransfer.getClipboardContents());
-
-		// change the contents and then re-display
-		textTransfer.setClipboardContents("blah, blah, blah");
-		System.out.println("Clipboard contains:" + textTransfer.getClipboardContents());
-	}
+final class TextTransfer implements ClipboardOwner {
 
 	/**
 	 * Empty implementation of the ClipboardOwner interface.
@@ -46,12 +35,9 @@ public final class TextTransfer implements ClipboardOwner {
 		if (hasTransferableText) {
 			try {
 				result = (String) contents.getTransferData(DataFlavor.stringFlavor);
-			} catch (UnsupportedFlavorException ex) {
+			} catch (UnsupportedFlavorException | IOException ex) {
 				// highly unlikely since we are using a standard DataFlavor
-				System.out.println(ex);
-				ex.printStackTrace();
-			} catch (IOException ex) {
-				System.out.println(ex);
+				System.out.println(ex.getMessage());
 				ex.printStackTrace();
 			}
 		}

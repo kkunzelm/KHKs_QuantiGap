@@ -12,7 +12,6 @@ import ij.Menus;
 import ij.gui.*;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageProcessor;
-import ij.text.TextPanel;
 
 // Prof. Dr. Karl-Heinz Kunzelmann
 // www.kunzelmann.de
@@ -43,45 +42,42 @@ import ij.text.TextPanel;
  */
 
 public class KHKs_jQuantiGap implements PlugInFilter, MouseListener, MouseMotionListener, KeyListener {
-	static Vector images = new Vector();
+	private static final Vector<Integer> images = new Vector<>();
 	private static KHKs_jQuantiGap instance;
-	ImagePlus imp;
-	ImageCanvas ic;
-	Integer id;
-	ImageProcessor imgproc;
-	Vector list = new Vector();
-	int np = 0; // number of points which were clicked and should be used for evaluation
+	private ImagePlus imp;
+	private ImageCanvas ic;
+	private Integer id;
+	private final Vector<Roi> list = new Vector<>();
+	private int np = 0; // number of points which were clicked and should be used for evaluation
 	// hardcoded upper limit of points which can be clicked and line segments. But
 	// 1000 should be enough.
-	int[] xCoord = new int[1000];
-	int[] yCoord = new int[1000];
-	Line2D[] line = new Line2D[1000];
-	Color[] lineColor = new Color[1000];
+	private final int[] xCoord = new int[1000];
+	private final int[] yCoord = new int[1000];
+	private final Line2D[] line = new Line2D[1000];
+	private final Color[] lineColor = new Color[1000];
 
 	// I need three arrays to store the line data
 	// x = x-coordinate
 	// y = y-coordinate
 	// lineColor
-	Color c = new Color(255, 255, 255);
+	private Color c = new Color(255, 255, 255);
 	// sum is used to summarize the length of all criteria
 	// at present I have 9 colors, which represent 9 criteria
-	long[] sumOfLines = new long[9];
-	boolean firstPoint = true;
-	boolean delete = false;
-	boolean debug = true;
+	private final long[] sumOfLines = new long[9];
+	private boolean delete = false;
+	private final boolean debug = true;
 	// to describe the sample which is evaluated
-	int groupNumber = 1;
-	int sampleNumber = 1;
-	String description1 = "";
-	String description2 = "";
-	String textForTextPanel;
-	String headerForTextPanel;
-	JFrame f = new JFrame();
-	JFrame f2 = new JFrame();
+	private int groupNumber = 1;
+	private int sampleNumber = 1;
+	private String description1 = "";
+	private String description2 = "";
+	private String textForTextPanel;
+	private String headerForTextPanel;
+	private final JFrame f = new JFrame();
+	private final JFrame f2 = new JFrame();
 	private Point p;
 	private Updater updater = new Updater();
 	private ImageWindow win;
-	private double min, max;
 
 	public int setup(String arg, ImagePlus img) {
 
@@ -138,15 +134,13 @@ public class KHKs_jQuantiGap implements PlugInFilter, MouseListener, MouseMotion
 		shortcuts.remove(71); // g
 		shortcuts.remove(81); // q
 
-		imgproc = ip;
-		id = new Integer(imp.getID());
+		id = imp.getID();
 		if (instance != null && imp == instance.imp) {
 			// IJ.log("instance!=null: "+imp+" "+instance.imp);
 			return;
 		}
 		if (images.contains(id)) {
 			IJ.log("Already listening to this image");
-			return;
 		} else {
 
 			instance = this;
@@ -165,11 +159,11 @@ public class KHKs_jQuantiGap implements PlugInFilter, MouseListener, MouseMotion
 	}
 
 	// adds a shape element with a color and a line width to the vector list
-	void addElement(Vector list, Shape shape, Color color, int lineWidth) {
+	private void addElement(Vector<Roi> list, Shape shape, Color color, int lineWidth) {
 
 		Roi roi = new ShapeRoi(shape);
-		roi.setInstanceColor(color);
-		roi.setLineWidth(lineWidth);
+		roi.setStrokeColor(color);
+		roi.setStrokeWidth(lineWidth);
 		list.addElement(roi);
 	}
 
@@ -179,8 +173,8 @@ public class KHKs_jQuantiGap implements PlugInFilter, MouseListener, MouseMotion
 		// position
 		// in case of movement during clicking not evaluated.
 		// it is better to use just mouseRelease instead of mouseClicked
-		if (e.getClickCount() == 2) {
-		}
+//		if (e.getClickCount() == 2) {
+//		}
 	}
 
 	public void mousePressed(MouseEvent e) {
@@ -210,7 +204,7 @@ public class KHKs_jQuantiGap implements PlugInFilter, MouseListener, MouseMotion
 				System.out.println("x/y/n: " + xCoord[i] + "/" + yCoord[i] + "/" + i);
 		}
 
-		if (np > 1 && delete == false) {
+		if (np > 1 && !delete) {
 			// np is incremented in the else-statement
 			// which means that the counter np is one higher then the actual clicks
 			// therefore we have to use np-1
@@ -408,7 +402,7 @@ public class KHKs_jQuantiGap implements PlugInFilter, MouseListener, MouseMotion
 	 * ip = imp.getProcessor(); min = ip.getMin(); max = ip.getMax(); update(); } }
 	 */
 
-	void allDone() {
+	private void allDone() {
 
 		// in case of 'allDone' (Q) - the lines will be kept as an overlay of the image
 
@@ -426,22 +420,25 @@ public class KHKs_jQuantiGap implements PlugInFilter, MouseListener, MouseMotion
 
 		}
 
-		ic.setDisplayList(list);
+		Overlay overlay = new Overlay();
+		for(Roi roi: list){
+			overlay.add(roi);
+		}
+		ic.setOverlay(overlay);
 		ic.setCustomRoi(true);
 
 		win.setResizable(true);
 		images.removeElement(id);
 		instance = null;
 
-		// showImportantData();
-		showImportantData2();
+		showImportantData();
 
 		// ***
 		f.dispose();
 
 	}
 
-	void dispose() {
+	private void dispose() {
 
 		// in case of dispose (ESC key) - the lines will be deleted
 
@@ -452,7 +449,7 @@ public class KHKs_jQuantiGap implements PlugInFilter, MouseListener, MouseMotion
 		ic.removeMouseMotionListener(this);
 		ic.removeKeyListener(this);
 
-		ic.setDisplayList(null);
+		ic.setOverlay(null);
 		ic.setCustomRoi(false);
 		win.setResizable(true);
 		images.removeElement(id);
@@ -496,7 +493,11 @@ public class KHKs_jQuantiGap implements PlugInFilter, MouseListener, MouseMotion
 			addElement(list, line[i], lineColor[i], 2);
 		}
 
-		ic.setDisplayList(list);
+		Overlay overlay = new Overlay();
+		for(Roi roi: list){
+			overlay.add(roi);
+		}
+		ic.setOverlay(overlay);
 		ic.setCustomRoi(true);
 	}
 
@@ -504,22 +505,22 @@ public class KHKs_jQuantiGap implements PlugInFilter, MouseListener, MouseMotion
 	 * Refresh the output windows. This is done by sending a signal to the Updater()
 	 * thread.
 	 */
-	void update() {
+	private void update() {
 		if (updater != null)
 			updater.doUpdate();
 	}
 
-	public long distance(int x1, int y1, int x2, int y2) {
+	private long distance(int x1, int y1, int x2, int y2) {
 		double dx = x1 - x2; // horizontal difference
 		double dy = y1 - y2; // vertical difference
 
 		// I just need to return the value as long
 
-		long dist = Math.round(Math.sqrt(dx * dx + dy * dy)); // distance using Pythagoras theorem
-		return dist;
+		// distance using Pythagoras theorem
+		return Math.round(Math.sqrt(dx * dx + dy * dy));
 	}
 
-	public void collectDetails() {
+	private void collectDetails() {
 
 		/*
 		 * from ImageJ -> GenericDialog.java
@@ -585,10 +586,7 @@ public class KHKs_jQuantiGap implements PlugInFilter, MouseListener, MouseMotion
 
 	}
 
-	private void showImportantData2() {
-
-		// replaces showImportantData. I did not like the vertical scollbar of ImageJs
-		// TextPanel
+	private void showImportantData() {
 
 		// TODO: maybe format table, i.e. centered, color background etc, as described
 		// here:
@@ -634,102 +632,27 @@ public class KHKs_jQuantiGap implements PlugInFilter, MouseListener, MouseMotion
 		// this is just in case the headers have to be copied first
 		// which would destroy the clipboard content
 
-		buttonCopyDataToClipboard.addActionListener(new ActionListener() {
-
-			public void actionPerformed(ActionEvent e1) {
-				// System.out.println("KH:3.4.08 "+textImportantData);
-				// textPanel.saveAs("");
-				TextTransfer textTransfer = new TextTransfer();
-				textTransfer.setClipboardContents(textForTextPanel);
-			}
+		buttonCopyDataToClipboard.addActionListener(e1 -> {
+			// System.out.println("KH:3.4.08 "+textImportantData);
+			// textPanel.saveAs("");
+			TextTransfer textTransfer1 = new TextTransfer();
+			textTransfer1.setClipboardContents(textForTextPanel);
 		});
 
-		buttonCopyHeaderToClipboard.addActionListener(new ActionListener() {
-
-			public void actionPerformed(ActionEvent e2) {
-				// System.out.println("KH:3.4.08 "+textImportantData);
-				// textPanel.saveAs("");
-				TextTransfer textTransfer = new TextTransfer();
-				textTransfer.setClipboardContents(headerForTextPanel);
-			}
+		buttonCopyHeaderToClipboard.addActionListener(e2 -> {
+			// System.out.println("KH:3.4.08 "+textImportantData);
+			// textPanel.saveAs("");
+			TextTransfer textTransfer12 = new TextTransfer();
+			textTransfer12.setClipboardContents(headerForTextPanel);
 		});
 
-		BoxLayout box = new BoxLayout(f2.getContentPane(), 1);
+		BoxLayout box = new BoxLayout(f2.getContentPane(), BoxLayout.Y_AXIS);
 		f2.getContentPane().setLayout(box);
 
 		f2.getContentPane().add(panel);
 		f2.setSize(800, 100);
 		// f.pack();
 		f2.setVisible(true);
-
-	}
-
-	public void showImportantData() {
-
-		// TODO: maybe it is better to save the files
-		// look at TextPanel.java, Measurements.java, ResultsTable.java, Analyzer.java
-		// for ideas
-
-		final TextPanel textPanel = new TextPanel("Results of group/sample " + groupNumber + "/" + sampleNumber);
-
-		headerForTextPanel = ("Group_number\tSample_number\tdescription1\tdescription2\te_perf_red\te_gap_magenta\te_overhang_pink\te_underfill_orange\td_perf_blue\td_gap_cyan\td_overhang_green\td_underfill_yellow\tartifact_darkgrey");
-		// headerForTextPanel =
-		// ("Group_number\tSample_number\tdescription1\tdescription2\tsumOfLine0_red\tsumOfLine1_magenta\tsumOfLine2_pink\tsumOfLine3_orange\tsumOfLine4_blue\tsumOfLine5_cyan\tsumOfLine6_green\tsumOfLine7_yellow\tsumOfLine8_darkgrey");
-		textForTextPanel = (groupNumber + "\t" + sampleNumber + "\t" + description1 + "\t" + description2 + "\t"
-				+ sumOfLines[0] + "\t" + sumOfLines[1] + "\t" + sumOfLines[2] + "\t" + sumOfLines[3] + "\t"
-				+ sumOfLines[4] + "\t" + sumOfLines[5] + "\t" + sumOfLines[6] + "\t" + sumOfLines[7] + "\t"
-				+ sumOfLines[8]);
-
-		textPanel.setColumnHeadings(headerForTextPanel);
-		textPanel.appendLine(textForTextPanel);
-
-		JFrame jf = new JFrame("Important Data of the evaluation process");
-		JPanel panel = new JPanel(); // Panel erstellen (hat als Default ein FlowLayout)
-
-		JButton buttonCopyDataToClipboard = new JButton("Copy to Clipboard...");
-		JButton buttonCopyHeaderToClipboard = new JButton("Copy Header to Clipboard...");
-		panel.add(buttonCopyDataToClipboard);
-		panel.add(buttonCopyHeaderToClipboard);
-
-		// the results are copied to the system clipboard now
-
-		TextTransfer textTransfer = new TextTransfer();
-		textTransfer.setClipboardContents(textForTextPanel);
-
-		// this is just in case the headers have to be copied first
-		// which would destroy the clipboard content
-
-		buttonCopyDataToClipboard.addActionListener(new ActionListener() {
-
-			public void actionPerformed(ActionEvent e1) {
-				// System.out.println("KH:3.4.08 "+textImportantData);
-				// textPanel.saveAs("");
-				TextTransfer textTransfer = new TextTransfer();
-				textTransfer.setClipboardContents(textForTextPanel);
-			}
-		});
-
-		buttonCopyHeaderToClipboard.addActionListener(new ActionListener() {
-
-			public void actionPerformed(ActionEvent e2) {
-				// System.out.println("KH:3.4.08 "+textImportantData);
-				// textPanel.saveAs("");
-				TextTransfer textTransfer = new TextTransfer();
-				textTransfer.setClipboardContents(headerForTextPanel);
-			}
-		});
-
-		BoxLayout box = new BoxLayout(jf.getContentPane(), 1);
-		jf.getContentPane().setLayout(box);
-		jf.getContentPane().add(textPanel);
-		// Kh jf.getContentPane().add(buttonCopyDataToClipboard);
-		// KH jf.getContentPane().add(buttonCopyHeaderToClipboard);
-		jf.getContentPane().add(panel);
-		// For the integer version of setBounds, the window upper left corner is at the
-		// x, y location specified by the first two arguments, and has the width and
-		// height specified by the last two arguments.
-		jf.setBounds(100, 100, 950, 200);
-		jf.setVisible(true);
 
 	}
 
@@ -788,7 +711,7 @@ public class KHKs_jQuantiGap implements PlugInFilter, MouseListener, MouseMotion
 						}
 						// else loop through to update again
 					}
-				} catch (Exception e) {
+				} catch (Exception ignored) {
 				}
 			}
 		}
